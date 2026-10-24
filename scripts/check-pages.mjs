@@ -4,7 +4,7 @@ import { readFile, mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 
 // Synthetic GitHub responses: never requires a token or publishes anything.
-const files = new Set(['index.html', 'en.html', 'style.css', 'downloads.js', 'favicon.svg', 'screenshots/php-completion.png', 'screenshots/php-navigation.png', 'screenshots/database.png']);
+const files = new Set(['index.html', 'pt.html', 'en.html', 'style.css', 'downloads.js', 'favicon.svg', 'screenshots/php-completion.png', 'screenshots/php-navigation.png', 'screenshots/database.png']);
 const server = createServer(async (request, response) => {
   const pathname = request.url?.split('?')[0] || '/';
   const file = pathname.includes('/screenshots/') ? `screenshots/${pathname.split('/screenshots/')[1]}` : pathname.split('/').at(-1) || 'index.html';
@@ -25,7 +25,10 @@ try {
   const url = `http://127.0.0.1:${server.address().port}/project/`;
   const status = page.locator('#release-status');
   await page.goto(url);
-  await assert.doesNotReject(() => status.getByText('Os downloads serão disponibilizados', { exact: false }).waitFor());
+  assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+  assert.match(await page.locator('h1').innerText(), /Your IDE/);
+  assert.equal(await page.locator('.language-switch [aria-current="page"]').innerText(), 'EN');
+  await assert.doesNotReject(() => status.getByText('Downloads will be available once the repository', { exact: false }).waitFor());
   assert.equal(await page.locator('.download-list a').count(), 0);
   await page.locator('.hero-shot img').waitFor();
   await page.locator('.product-shot img').evaluateAll(images => Promise.all(images.map(image => { image.loading = 'eager'; return image.decode(); })));
@@ -58,24 +61,18 @@ try {
   await page.screenshot({ path: '.artifacts/pages-mobile.png', fullPage: true });
   releases = [{ tag_name: 'v0.2.8-beta', prerelease: true, assets: [asset('PHP.IDE_arm64.dmg')] }];
   await page.reload();
-  await status.getByText('Prévia experimental', { exact: false }).waitFor();
+  await status.getByText('Experimental preview', { exact: false }).waitFor();
   assert.equal(await page.locator('.pending').count(), 2);
   releases = [];
   await page.reload();
-  await status.getByText('A primeira versão ainda não foi publicada.', { exact: false }).waitFor();
+  await status.getByText('The first release has not been published', { exact: false }).waitFor();
   fail = true;
   await page.reload();
-  await page.getByRole('button', { name: 'Tentar novamente' }).waitFor();
+  await page.getByRole('button', { name: 'Try again', exact: true }).waitFor();
   assert.equal(await page.locator('[data-releases]').isVisible(), true);
   fail = false;
-  await page.getByRole('button', { name: 'Tentar novamente' }).click();
-  await status.getByText('A primeira versão ainda não foi publicada.', { exact: false }).waitFor();
-  await page.getByRole('link', { name: 'EN', exact: true }).click();
-  assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await status.getByText('The first release has not been published', { exact: false }).waitFor();
-  assert.match(await page.locator('h1').innerText(), /Your IDE/);
-  assert.equal(await page.locator('.language-switch [aria-current="page"]').innerText(), 'EN');
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   releases = [{ tag_name: 'v1.0-beta', prerelease: true, assets: [asset('PHP.IDE_arm64.dmg')] }];
   await page.reload();
   await status.getByText('Experimental preview', { exact: false }).waitFor();
@@ -87,14 +84,22 @@ try {
   fail = false;
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await status.getByText('Experimental preview', { exact: false }).waitFor();
-  await page.locator('.product-shot img').evaluateAll(images => Promise.all(images.map(image => { image.loading = 'eager'; return image.decode(); })));
-  await page.screenshot({ path: '.artifacts/pages-english-mobile.png', fullPage: true });
-  await page.setViewportSize({ width: 1440, height: 1080 });
-  await page.screenshot({ path: '.artifacts/pages-english-desktop.png', fullPage: true });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.getByRole('link', { name: 'PT', exact: true }).click();
   assert.equal(await page.locator('html').getAttribute('lang'), 'pt-BR');
   await status.getByText('Prévia experimental', { exact: false }).waitFor();
-  console.log('Pages OK: language switching, English downloads/errors, English mobile layout; subdirectory, unconfigured, stable/prerelease, platforms/architectures, absent assets, unsafe URL, API failure/retry, mobile overflow.');
+  assert.match(await page.locator('h1').innerText(), /Sua IDE/);
+  assert.equal(await page.locator('.language-switch [aria-current="page"]').innerText(), 'PT');
+  assert.match(await page.locator('.download-list a').innerText(), /Baixar/);
+  await page.locator('.product-shot img').evaluateAll(images => Promise.all(images.map(image => { image.loading = 'eager'; return image.decode(); })));
+  await page.screenshot({ path: '.artifacts/pages-portuguese-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1080 });
+  await page.screenshot({ path: '.artifacts/pages-portuguese-desktop.png', fullPage: true });
+  await page.getByRole('link', { name: 'EN', exact: true }).click();
+  assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+  await status.getByText('Experimental preview', { exact: false }).waitFor();
+  assert.equal(await page.locator('.language-switch [aria-current="page"]').innerText(), 'EN');
+  console.log('Pages OK: English default, language switching, downloads/errors, mobile layout; subdirectory, unconfigured, stable/prerelease, platforms/architectures, absent assets, unsafe URL, API failure/retry.');
 } finally {
   await browser.close();
   server.close();
