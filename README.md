@@ -1,15 +1,15 @@
 # Página pública e downloads
 
-O site em `website/` é independente do aplicativo. HTML/CSS/JavaScript estáticos são publicados no GitHub Pages pelo workflow `.github/workflows/pages.yml`. A autoria do site é Jeidison Farias. Não há serviço próprio nem credenciais no navegador.
+O site em `website/` é independente do aplicativo. HTML/CSS/JavaScript estáticos são publicados no GitHub Pages do repositório `phpforge-dev/php-ide`, o único endereço público. A autoria do site é Jeidison Farias. Não há serviço próprio nem credenciais no navegador.
 
-Publicação: [phpforge-dev.github.io/php-ide](https://phpforge-dev.github.io/php-ide-website/). Repositório do site: [phpforge-dev/php-ide-website](https://github.com/phpforge-dev/php-ide-website). A conta `jeidison` é proprietária da organização. Plugins são distribuídos em [phpforge-dev/plugins](https://github.com/phpforge-dev/plugins).
+Publicação: [phpforge-dev.github.io/php-ide](https://phpforge-dev.github.io/php-ide/). Repositório do site: [phpforge-dev/php-ide-website](https://github.com/phpforge-dev/php-ide-website). A conta `jeidison` é proprietária da organização. Plugins são distribuídos em [phpforge-dev/plugins](https://github.com/phpforge-dev/plugins).
 
 ## Publicar
 
-1. Publique o projeto no repositório da organização. Para GitHub Free, use um repositório público para hospedar no Pages.
-2. No GitHub, abra **Settings → Pages → Build and deployment → Source → GitHub Actions**.
-3. Envie os arquivos do site para `main`, ou execute **Actions → Project website → Run workflow**.
-4. O job mostra o endereço publicado. Para um repositório de projeto, normalmente é `https://ORGANIZACAO.github.io/REPOSITORIO/`.
+1. Envie os arquivos do site para `main`. O workflow `.github/workflows/pages.yml` valida o build e pede ao `php-ide` (evento `website-updated`) que publique.
+2. O pedido usa o secret `PHP_IDE_DISPATCH_TOKEN`: um token fine-grained com acesso só a `phpforge-dev/php-ide` e permissão **Contents: Read and write**. Sem o secret, o job avisa e não publica.
+3. Para publicar à mão: `gh workflow run website.yml -R phpforge-dev/php-ide` ou **php-ide → Actions → Project website → Run workflow**.
+4. O GitHub Pages deste repositório fica desligado, para não existir um segundo site.
 
 O build consulta as releases de `phpforge-dev/php-ide`, independentemente do repositório do site. Para alterar a origem dos downloads, defina `PAGES_REPOSITORY=organizacao/repositorio`. Publica somente os arquivos estáticos explicitamente copiados pelo script; código da IDE, fixtures e artefatos de build não entram no site.
 

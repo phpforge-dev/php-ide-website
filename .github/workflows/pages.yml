@@ -1,5 +1,7 @@
 name: Project website
 
+# The site is published by phpforge-dev/php-ide at https://phpforge-dev.github.io/php-ide/.
+# This repository only validates the build and asks php-ide to publish it.
 on:
   push:
     branches: [main]
@@ -9,31 +11,24 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Prepare public files
+      - name: Validate public files
         run: node scripts/build-pages.mjs
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: .artifacts/pages
-      - name: Publish
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Ask php-ide to publish
+        env:
+          GH_TOKEN: ${{ secrets.PHP_IDE_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::PHP_IDE_DISPATCH_TOKEN is not set. Publish with: gh workflow run website.yml -R phpforge-dev/php-ide"
+            exit 0
+          fi
+          gh api repos/phpforge-dev/php-ide/dispatches -f event_type=website-updated
